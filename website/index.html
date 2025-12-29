@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Simple Web App</title>
+    </head>
+    <body>
+        <h1>Welcome to the web app!</h1>
+        <p id="message">Loading message from the backend...</p>
+
+        <script>
+            async function fetchMessage() {
+                try {
+                    const response = await fetch('');
+
+                    if (!response.ok) {
+                        throw new Error('This was an error.')
+                    }
+
+                    const data = await response.json();
+
+                    document.getElementById('message').innerHTML = `Message from the backend: ${data.message}.`;
+                } catch (error) {
+                    document.getElementById('message').innerHTML = "Error fetching message from the backend.";
+                    console.error("Error:", error);
+                }
+            }
+
+            fetchMessage();
+        </script>
+    </body>
+</html>

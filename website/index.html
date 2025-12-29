@@ -12,7 +12,7 @@
         <script>
             async function fetchMessage() {
                 try {
-                    const response = await fetch('');
+                    const response = await fetch('http://localhost:5000/api');
 
                     if (!response.ok) {
                         throw new Error('This was an error.')
@@ -20,7 +20,7 @@
 
                     const data = await response.json();
 
-                    document.getElementById('message').innerHTML = `Message from the backend: ${data.message}.`;
+                    document.getElementById('message').innerHTML = `Message from the backend: ${data.message}`;
                 } catch (error) {
                     document.getElementById('message').innerHTML = "Error fetching message from the backend.";
                     console.error("Error:", error);

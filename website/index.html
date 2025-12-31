@@ -14,12 +14,15 @@
         <p id="response-message"></p>
 
         <button id="show-tasks">Show Tasks</button>
+        <p id="tasks-loading"></p>
         <p id="error-message"></p>
 
         <script>
             const postButton = document.getElementById("post-task");
-            const postMessage = document.getElementById("response-message");
-            const postLoading = document.getElementById("loading-message");
+            const taskButton = document.getElementById("show-tasks");
+            const postedLoading = document.getElementById("loading-message");
+            const postedMessage = document.getElementById("response-message");
+            const tasksMessage = document.getElementById("tasks-loading");
 
             async function addTask() {
                 const task = document.getElementById("task-input").value;
@@ -38,15 +41,15 @@
                     }
 
                     const data = await response.json();
-                    postMessage.innerHTML = data.message;
-                } catch {
-                    postMessage.innerHTML = "Error posting task. Please try again."
+                    postedMessage.innerHTML = data.message;
+                } catch (error) {
+                    postedMessage.innerHTML = "Error posting task. Please try again."
                     console.error("Error:", error);
                 }
             }
 
             postButton.addEventListener("click", () => {
-                postLoading.innerHTML = "Waiting for task to post...";
+                postedLoading.innerHTML = "Waiting for task to post...";
                 addTask();
             });
 
@@ -67,7 +70,10 @@
                 }
             }
 
-            fetchTasks();
+            taskButton.addEventListener("click", () => {
+                tasksMessage.innerHTML = "Retrieving tasks...";
+                fetchTasks();
+            });
         </script>
     </body>
 </html>

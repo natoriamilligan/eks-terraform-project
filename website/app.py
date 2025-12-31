@@ -22,7 +22,7 @@ def get_tasks():
     conn = get_connection()
     cur = conn.cursor()
 
-    cur.execute("SELECT id, title FROM tasks ORDER BY id;")
+    cur.execute("SELECT id, task FROM tasks ORDER BY id;")
     tasks = cur.fetchall()
 
     cur.close()
@@ -34,31 +34,25 @@ def get_tasks():
 def create_task():
     data = request.get_json()
 
-    title = data.get("title")
+    task = data.get("task")
 
-    if not title:
-        return jsonify({"error": "Title is required"}), 400
+    if not task:
+        return jsonify({"error": "Task is required"}), 400
 
     conn = get_connection()
     cur = conn.cursor()
 
     cur.execute(
-        "INSERT INTO tasks (title) VALUES (%s) RETURNING id, title;",
-        (title)
+        "INSERT INTO tasks (task) VALUES (%s);",
+        (task)
     )
 
-    task_id = cur.fetchone()["id"]
     conn.commit()
 
     cur.close()
     conn.close()
 
-    return jsonify({
-        "id": task_id,
-        "title": title
-    }), 201
-
-
+    return jsonify({"message": "Your task has been added!"}), 201
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

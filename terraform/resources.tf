@@ -1,3 +1,11 @@
+# Create subnet locals for EKS module to reference
+locals {
+  private_subnet_ids = [
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
+  ]
+}
+
 # Create VPC
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"

@@ -16,5 +16,5 @@ module "eks" {
     }
   }
 
-  manage_aws_auth = true  # lets module manage cluster RBAC
+  manage_aws_auth = true
 }

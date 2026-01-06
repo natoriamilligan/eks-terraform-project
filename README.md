@@ -4,6 +4,13 @@
 
 Provision infrastructure using Terraform for a simple web application. The frontend will be deployed using CloudFront and S3 and the backend will be deployed on an EKS cluster.
 
+## 🧰 Tech
+- Terraform
+- AWS CLI
+- eksctl (Amazon EKS)
+- Kubernetes
+
+  
 ## 🧠 What I Learned
 - The EKS module for AWS saves you time by provisioning dozens of resources required to set up EKS. All you have to do is provide the module with a few arguments specific for your application
 - AWS only manages the control plane. Everything else has to be set up using Kubernetes. (pods, load balancers, RBAC)
@@ -11,7 +18,8 @@ Provision infrastructure using Terraform for a simple web application. The front
 - If you want to expose pods to the internet, have path-based routing, or use HTTPS, it is best to use an Ingress with an ALB rather than a Service of type LoadBalancer
 - An Ingress is a Kubernetes resource that routes traffic to specific Services
 - A Service is an endpoint that points to pods
-- The AWS Load Balancer Controller needs to be downloaded to bridge Kubernetes and AWS ALBs. It manages the certificates, listeners, target groups, health checks and security groups for the ALB.
+- The AWS Load Balancer Controller needs to be downloaded to bridge Kubernetes and AWS ALBs. It manages the certificates, listeners, target groups, health checks and security groups for the ALB
+- The AWS Load Balancer Controller is a cluster-level system component so it run in the kube-system namespace
 - The Horizontal Pod Autoscaler (HPA) increases the number of pods in the node depending on traffic and the node metrics
 - The Cluster Autoscaler watches for pending pods and determines if a new worker node needs to be provisioned
 - A pod is a running instance of your app

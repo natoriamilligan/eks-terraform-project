@@ -11,6 +11,7 @@ Provision infrastructure using Terraform for a simple web application. The front
 - If you want to expose pods to the internet, have path-based routing, or use HTTPS, it is best to use an Ingress with an ALB rather than a Service of type LoadBalancer
 - An Ingress is a Kubernetes resource that routes traffic to specific Services
 - A Service is an endpoint that points to pods
+- The AWS Load Balancer Controller needs to be downloaded to bridge Kubernetes and AWS ALBs. It manages the certificates, listeners, target groups, health checks and security groups for the ALB.
 - The Horizontal Pod Autoscaler (HPA) increases the number of pods in the node depending on traffic and the node metrics
 - The Cluster Autoscaler watches for pending pods and determines if a new worker node needs to be provisioned
 - A pod is a running instance of your app

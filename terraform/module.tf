@@ -1,6 +1,6 @@
 module "eks" {
-  source  = "terraform-aws-modules/eks/aws"
-  version = ">= 21.10.1"  
+  source          = "terraform-aws-modules/eks/aws"
+  version         = ">= 21.10.1"  
 
   cluster_name    = "eks-cluster"
   cluster_version = "1.35.0"
@@ -17,4 +17,5 @@ module "eks" {
   }
 
   manage_aws_auth = true
+  enable_irsa     = true
 }

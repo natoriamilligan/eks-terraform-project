@@ -23,10 +23,12 @@
             const postedLoading = document.getElementById("loading-message");
             const postedMessage = document.getElementById("response-message");
             const tasksMessage = document.getElementById("tasks-loading");
+            const input = document.getElementById("task-input");
 
             async function addTask() {
                 const task = document.getElementById("task-input").value;
-                
+                input.value = "";
+
                 try {
                     const response = await fetch('http://localhost:5000/tasks', {
                         method: "POST",

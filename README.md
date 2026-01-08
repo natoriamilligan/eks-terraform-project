@@ -13,6 +13,7 @@ Provision infrastructure using Terraform for a simple web application. The front
   
 ## 🧠 What I Learned
 - The EKS module for AWS saves you time by provisioning dozens of resources required to set up EKS. All you have to do is provide the module with a few arguments specific for your application
+- It is best to save the Terraform state file remotely when working on a team to make sure one apply happens at a time
 - AWS only manages the control plane. Everything else has to be set up using Kubernetes. (pods, load balancers, RBAC)
 - A Kubernetes deployment manages scaling and the number of pods
 - If you want to expose pods to the internet, have path-based routing, or use HTTPS, it is best to use an Ingress with an ALB rather than a Service of type LoadBalancer

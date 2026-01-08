@@ -1,3 +1,11 @@
+# Create subnet locals for EKS module to reference
+locals {
+  private_subnet_ids = [
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
+  ]
+}
+
 module "eks" {
   source          = "terraform-aws-modules/eks/aws"
   version         = ">= 21.10.1"  

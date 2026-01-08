@@ -1,0 +1,26 @@
+name: Provision Infrastructure and AWS Load Balancer Controller
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps: 
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v5
+      with: 
+        role-to-assume: arn:aws:iam::000363030077:role/terraform-github-role
+        aws-region: us-east-1
+          
+    - name: Initiate Terraform
+      run: terraform init
+
+    - name: Plan infrastructure
+      run: terraform plan
+
+    - name: Apply infrastructure 
+      run: terraform apply -auto-approve

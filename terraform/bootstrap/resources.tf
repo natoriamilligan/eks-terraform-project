@@ -1,3 +1,14 @@
+# Direct state file to S3 bucket and connect DynamoDB table
+terraform {
+  backend "s3" {
+    bucket = "nmilligan-tf-states"
+    key = "bootstrap/terraform.tfstate"
+    region = "us-east-1"
+    dynamodb_table = "terraform-lock-bootstrap"
+    encrypt = true
+  }
+}
+
 # Create VPC
 resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
@@ -85,4 +96,9 @@ resource "aws_route_table_association" "private_a" {
 resource "aws_route_table_association" "private_b" {
   subnet_id      = aws_subnet.private_b.id
   route_table_id = aws_route_table.private_route_table.id
+}
+
+# Create hosted zone
+resource "aws_route53_zone" "hosted_zone" {
+  name = "banksie.app"
 }

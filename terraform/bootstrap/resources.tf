@@ -108,3 +108,49 @@ resource "aws_route_table_association" "private_b" {
 resource "aws_route53_zone" "hosted_zone" {
   name = locals.root_domain
 }
+
+# Create Lambda IAM role
+resource "aws_iam_role" "lambda_role" {
+  name               = "lambda_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+}
+
+# Attach role allows Lambda to write to CW logs
+resource "aws_iam_role_policy_attachment" "lambda_execution_attach" {
+  role       = aws_iam_role.lambda_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# Policy to allow Lamdba to access Secrets Manager
+resource "aws_iam_role_policy" "lambda_policy" {
+  name = "accessSecretsManager"
+  role = aws_iam_role.lambda_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+          Action = ["secretsmanager:GetSecretValue"]
+          Effect   = "Allow"
+          Resource = "arn:aws:secretsmanager:${data.aws_caller_identity.current.account_id}:secret:slack-webhook-url*"
+      },
+    ]
+  })
+}
+
+# Creat lambda function
+resource "aws_lambda_function" "lambda_function" {
+  filename         = "ns-propagation.zip"
+  function_name    = "ns-propagation"
+  role             = aws_iam_role.lamda_role.arn
+  handler          = "ns-propagation.lambda_handler"
+  source_code_hash = filebase64sha256("ns-propagation.zip")
+  runtime          = "python3.11"
+
+  environment {
+    variables = {
+      NAMESERVERS   = jsonencode(aws_route53_zone.hosted_zone.nameservers)
+      DOMAIN = locals.root_domain
+    }
+  }
+}

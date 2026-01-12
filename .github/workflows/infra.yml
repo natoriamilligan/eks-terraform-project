@@ -18,12 +18,15 @@ jobs:
           
     - name: Initiate Terraform
       run: terraform init
+      working-directory: terraform/bootstrap
 
     - name: Plan infrastructure
       run: terraform plan
+      working-directory: terraform/bootstrap
 
     - name: Apply infrastructure 
       run: terraform apply -auto-approve
+      working-directory: terraform/bootstrap
 
     - name: Get nameserver domains
       id: ns_output
@@ -51,3 +54,4 @@ jobs:
           }
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+

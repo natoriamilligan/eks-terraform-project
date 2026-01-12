@@ -24,3 +24,30 @@ jobs:
 
     - name: Apply infrastructure 
       run: terraform apply -auto-approve
+
+    - name: Get nameserver domains
+      id: ns_output
+      run: |
+        OUTPUT=$(terraform output -json nameservers)
+        echo "nameservers=$OUTPUT" >> $GITHUB_OUTPUT
+
+    - name: Send Slack nameservers
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        payload: |
+          {
+            "text": "Nameservers: ```${{  steps.ns_output.outputs.nameservers  }}```>"
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        
+    - name: Notify Slack if pipeline fails
+      if: failure()
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        payload: |
+          {
+            "text": "🚨 *Infrastructure Pipeline Failed*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nWorkflow: ${{ github.workflow }}\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

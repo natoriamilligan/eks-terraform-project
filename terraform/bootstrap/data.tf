@@ -12,13 +12,13 @@ data "aws_iam_policy_document" "lambda_assume_role" {
   }
 }
 
-data "aws_iam_policy_document" "eventbridge_assume_role" {
+data "aws_iam_policy_document" "scheduler_assume_role" {
   statement {
     effect = "Allow"
 
     principals {
       type        = "Service"
-      identifiers = ["events.amazonaws.com"]
+      identifiers = ["scheduler.amazonaws.com"]
     }
 
     actions = ["sts:AssumeRole"]

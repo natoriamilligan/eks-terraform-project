@@ -5,7 +5,7 @@ import dns.resolver
 from dns.exception import DNSException
 
 SLACK_WEBHOOK_URL = os.environ("SLACK_WEBHOOK_URL")
-NAMESERVERS = os.environ("NAMESERVERS")
+NAMESERVERS = json.loads(os.environ["NAMESERVERS"])
 DOMAIN = os.environ("DOMAIN")
 
 def lambda_handler(event, context):

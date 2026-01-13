@@ -134,6 +134,14 @@ resource "aws_iam_role_policy" "lambda_policy" {
           Effect   = "Allow"
           Resource = "arn:aws:secretsmanager:${data.aws_caller_identity.current.account_id}:secret:slack-webhook-url*"
       },
+      {
+          Effect   = "Allow"
+          Action = [
+            "scheduler:UpdateSchedule",
+            "scheduler:DescribeSchedule"
+          ]
+          Resource = aws_scheduler_schedule.lambda_schedule.arn
+      },
     ]
   })
 }
@@ -152,6 +160,10 @@ resource "aws_lambda_function" "lambda_function" {
       NAMESERVERS           = jsonencode(aws_route53_zone.hosted_zone.nameservers)
       DOMAIN                = locals.root_domain
       SLACK_URL_SECRET_NAME = "slack-webhook-url"
+      TOKEN_NAME            = "aws-github-token"
+      GITHUB_REPO           = "natoriamilligan/eks-terraform-project"
+      GITHUB_WORKFLOW       = "infra.yml"
+      GITHUB_REF            = "master"
     }
   }
 }

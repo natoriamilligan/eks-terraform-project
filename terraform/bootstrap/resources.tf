@@ -155,3 +155,45 @@ resource "aws_lambda_function" "lambda_function" {
     }
   }
 }
+
+# Create Scheduler IAM role
+resource "aws_iam_role" "scheduler_role" {
+  name               = "scheduler_execution_role"
+  assume_role_policy = data.aws_iam_policy_document.scheduler_assume_role.json
+}
+
+# policy for Schedular IAM role
+resource "aws_iam_role_policy" "scheduler_lambda_policy" {
+  role = aws_iam_role.eventbridge_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["lambda:InvokeFunction"]
+        Resource = aws_lambda_function.lambda_function.arn
+      }
+    ]
+  })
+}
+
+resource "aws_scheduler_schedule_group" "lamdba_group" {
+  name = "lambda-group"
+}
+
+resource "aws_scheduler_schedule" "lambda_scheduler" {
+  name       = "lambda-schedule"
+  group_name = aws_scheduler_schedule_group.lambda_group.name
+
+  flexible_time_window {
+    mode = "OFF"
+  }
+
+  schedule_expression = "rate(30 minutes)"
+
+  target {
+    arn      = aws_lambda_function.lambda_function.arn
+    role_arn = aws_iam_role.scheduler_role.arn
+  }
+}

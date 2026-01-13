@@ -17,8 +17,6 @@ resource "aws_s3_bucket_policy" "app_bucket_policy" {
   depends_on = [aws_cloudfront_distribution.app_distribution]
 }
 
-
-
 # Create TLS certificate for root and subdomain
 resource "aws_acm_certificate" "domain_cert" {
   domain_name       = local.root_domain
@@ -63,6 +61,7 @@ resource "aws_cloudfront_origin_access_control" "s3" {
   signing_protocol                  = "sigv4"
 }
 
+# Create policy to prevent forwarding to S3
 resource "aws_cloudfront_origin_request_policy" "ORP_policy" {
   name    = "ORP-policy"
   cookies_config {
@@ -76,6 +75,7 @@ resource "aws_cloudfront_origin_request_policy" "ORP_policy" {
   }
 }
 
+# Create policy to limit caching to S3
 resource "aws_cloudfront_cache_policy" "s3_cache_policy" {
   name        = "s3-cache-policy"
   default_ttl = 3600
@@ -150,5 +150,43 @@ resource "aws_route53_record" "cloudfront" {
     name                   = aws_cloudfront_distribution.app_distribution.domain_name
     zone_id                = aws_cloudfront_distribution.app_distribution.hosted_zone_id
     evaluate_target_health = false
+  }
+}
+
+# Create RDS security group
+resource "aws_security_group" "db_sg" {
+  name        = "rds-sg"
+  vpc_id      = aws_vpc.main.id
+}
+
+# Create database subnet group to attach to VPC
+resource "aws_db_subnet_group" "db_subnet_group" {
+  name = "db-subnet-group"
+  subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
+}
+
+# Create database instance
+resource "aws_db_instance" "app_db" {
+  allocated_storage      = 20
+  db_name                = "mydb"
+  identifier             = "mydb"
+  engine                 = "postgres"
+  instance_class         = "db.t3.micro"
+  username               = "postgres"
+  password               = "password"
+
+  vpc_security_group_ids = [aws_security_group.db_sg.id]
+  db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
+
+  skip_final_snapshot    = true
+}
+
+# Create private repository in ECR
+resource "aws_ecr_repository" "app_repo" {
+  name                 = "app-repo"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
   }
 }

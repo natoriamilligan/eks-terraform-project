@@ -3,9 +3,6 @@ name: Provision Infrastructure and AWS Load Balancer Controller
 on: 
   workflow_dispatch:
 
-env:
-  TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-
 jobs:
   terraform:
     runs-on: ubuntu-latest
@@ -22,7 +19,7 @@ jobs:
     - name: Create lambda zip folder
       run: |
         cd lambda
-        zip -r ../terraform/boostrap/ns-propogated.zip .
+        zip -r ../terraform/boostrap/ns-propagation.zip .
         cd ..   
     
     - name: Initiate Terraform
@@ -63,5 +60,6 @@ jobs:
           }
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
 
 

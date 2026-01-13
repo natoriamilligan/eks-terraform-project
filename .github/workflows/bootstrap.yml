@@ -20,8 +20,13 @@ jobs:
       run: |
         cd lambda
         zip -r ../terraform/boostrap/ns-propagation.zip .
-        cd ..   
-    
+        cd ..  
+        
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.14.3
+        
     - name: Initiate Terraform
       run: terraform init
       working-directory: terraform/bootstrap
@@ -60,6 +65,7 @@ jobs:
           }
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
 
 
 

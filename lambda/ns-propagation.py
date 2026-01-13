@@ -5,14 +5,14 @@ import requests
 import dns.resolver
 from dns.exception import DNSException
 
-URL_SECRET_NAME = od.environ("SLACK_URL_SECRET_NAME")
+URL_SECRET_NAME = od.environ["SLACK_URL_SECRET_NAME"]
 NAMESERVERS = json.loads(os.environ["NAMESERVERS"])
-DOMAIN = os.environ("DOMAIN")
-SCHEDULER_NAME = os.environ("SCHEDULER_NAME")
-TOKEN_NAME = os.environ("TOKEN_NAME")
-REPO = os.environ("GITHUB_REPO")
-WORKFLOW = os.environ("GITHUB_WORKFLOW")
-REF = os.environ("GITHUB_REF")
+DOMAIN = os.environ["DOMAIN"]
+SCHEDULER_NAME = os.environ["SCHEDULER_NAME"]
+TOKEN_NAME = os.environ["TOKEN_NAME"]
+REPO = os.environ["GITHUB_REPO"]
+WORKFLOW = os.environ["GITHUB_WORKFLOW"]
+REF = os.environ["GITHUB_REF"]
 
 secrets_client = boto3.client("secretsmanager")
 scheduler_client = boto3.client("scheduler")
@@ -44,7 +44,7 @@ def trigger_github_workflow:
 
     data = {"ref": REF}
 
-    reponse = requests.post(url, headers=headers, json=data)
+    response = requests.post(url, headers=headers, json=data)
     response.raise_for_status()
 
     message = f"Second workflow has been triggered."

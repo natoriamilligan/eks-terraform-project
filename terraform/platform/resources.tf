@@ -1,3 +1,14 @@
+# Direct state file to S3 bucket and connect DynamoDB table
+terraform {
+  backend "s3" {
+    bucket         = "nmilligan-tf-states"
+    key            = "platform/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-lock-bootstrap"
+    encrypt        = true
+  }
+}
+
 locals {
   root_domain  = "banksie.app"
   subdomain    = "www.banksie.app"

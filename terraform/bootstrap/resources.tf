@@ -12,7 +12,7 @@ terraform {
 # Create locals
 locals {
   root_domain = "banksie.app"
-  subdomain  = "www.banksie.app
+  subdomain   = "www.banksie.app" 
 }
 
 # Create hosted zone
@@ -57,7 +57,7 @@ resource "aws_iam_role_policy" "lambda_policy" {
   })
 }
 
-# Creat lambda function
+# Create lambda function
 resource "aws_lambda_function" "lambda_function" {
   filename         = "ns-propagation.zip"
   function_name    = "ns-propagation"
@@ -85,7 +85,7 @@ resource "aws_iam_role" "scheduler_role" {
   assume_role_policy = data.aws_iam_policy_document.scheduler_assume_role.json
 }
 
-# policy for Schedular IAM role
+# Policy for Schedular IAM role
 resource "aws_iam_role_policy" "scheduler_lambda_policy" {
   role = aws_iam_role.eventbridge_role.id
 
@@ -101,10 +101,12 @@ resource "aws_iam_role_policy" "scheduler_lambda_policy" {
   })
 }
 
+# Schedular group
 resource "aws_scheduler_schedule_group" "lamdba_group" {
   name = "lambda-group"
 }
 
+# Create schedule for lambda function
 resource "aws_scheduler_schedule" "lambda_scheduler" {
   name       = "lambda-schedule"
   group_name = aws_scheduler_schedule_group.lambda_group.name

@@ -1,3 +1,13 @@
+# Reference eks module created in another state
+data "terraform_remote_state" "eks" {
+  backend = "s3"
+  config = {
+    bucket = "nmilligan-tf-states"
+    key    = "load-balancer/terraform.tfstate"
+    region = "us-east-1"
+  }
+}
+
 data "aws_iam_policy_document" "lb_controller_trust_policy" {
   statement {
     effect = "Allow"
@@ -6,12 +16,12 @@ data "aws_iam_policy_document" "lb_controller_trust_policy" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.eks.arn]
+      identifiers = [data.terraform_remote_state.eks.outputs.oidc_provider_arn]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub"
+      variable = "${data.terraform_remote_state.eks.outputs.oidc_provider}:sub"
       values   = [
         "system:serviceaccount:kube-system:aws-load-balancer-controller"
       ]
@@ -19,7 +29,7 @@ data "aws_iam_policy_document" "lb_controller_trust_policy" {
 
     condition {
       test     = "StringEquals"
-      variable = "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:aud"
+      variable = "${data.terraform_remote_state.eks.outputs.oidc_provider}:aud"
       values   = ["sts.amazonaws.com"]
     }
   }

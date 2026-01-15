@@ -12,7 +12,7 @@ terraform {
 # Create Load Balancer Controller IAM role
 resource "aws_iam_role" "lb_controller_role" {
   name               = "lb-controller-role"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role.json
+  assume_role_policy = data.aws_iam_policy_document.lb_controller_assume_policy.json
 }
 
 # Create policy for LB Controller

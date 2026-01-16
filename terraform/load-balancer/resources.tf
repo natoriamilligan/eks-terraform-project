@@ -3,7 +3,7 @@ terraform {
   backend "s3" {
     bucket         = "nmilligan-tf-states"
     key            = "load-balancer/terraform.tfstate"
-    region         = "us-east-1"
+    region         = var.region
     dynamodb_table = "terraform-lock-bootstrap"
     encrypt        = true
   }
@@ -25,4 +25,15 @@ resource "aws_iam_policy" "lb_controller" {
 resource "aws_iam_role_policy_attachment" "test-attach" {
   role       = aws_iam_role.lb_controller_role.name
   policy_arn = aws_iam_policy.lb_controller.arn
+}
+
+# LB Controller service account
+resource "kubernetes_service_account" "lb_controller" {
+  metadata {
+    name      = "aws-load-balancer-controller"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.lb_controller_role.arn
+    }
+  }
 }

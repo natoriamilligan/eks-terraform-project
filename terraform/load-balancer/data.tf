@@ -4,7 +4,7 @@ data "terraform_remote_state" "eks" {
   config = {
     bucket = "nmilligan-tf-states"
     key    = "load-balancer/terraform.tfstate"
-    region = "us-east-1"
+    region = var.region
   }
 }
 

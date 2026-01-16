@@ -3,7 +3,7 @@ terraform {
   backend "s3" {
     bucket         = "nmilligan-tf-states"
     key            = "bootstrap/terraform.tfstate"
-    region         = "us-east-1"
+    region         = var.region
     dynamodb_table = "terraform-lock-bootstrap"
     encrypt        = true
   }

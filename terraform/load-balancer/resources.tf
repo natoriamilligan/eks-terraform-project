@@ -91,6 +91,40 @@ resource "kubernetes_service_account" "external_DNS" {
   }
 }
 
+# Create ExternalDNS via Helm
+resource "helm_release" "external_DNS" {
+  name       = "external-DNS"
+  namespace  = "default"
+  repository = "https://charts.bitnami.com/bitnami"
+  chart      = "external-dns"
+  version    = "9.0.3" 
+
+  set {
+    name  = "provider"
+    value = "aws"
+  }
+
+  set {
+    name  = "aws.zoneType"
+    value = "public"
+  }
+
+  set {
+    name  = "serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = kubernetes_service_account.external_DNS.metadata[0].name
+  }
+
+  set {
+    name  = "txtOwnerId"
+    value = "external-DNS"
+  }
+}
+
 # Create Load Balancer Controller IAM role
 resource "aws_iam_role" "lb_controller_role" {
   name               = "lb-controller-role"
@@ -189,6 +223,7 @@ resource "kubernetes_ingress" "app_lb_ingress" {
       "alb.ingress.kubernetes.io/listen-ports"    = "[{\"HTTPS\":443}]"
       "alb.ingress.kubernetes.io/ssl-policy"      = "ELBSecurityPolicy-TLS13-1-2-Res-PQ-2025-09"
       "alb.ingress.kubernetes.io/target-type"     = "ip"
+      "external-dns.alpha.kubernetes.io/hostname" = api.banksie.app
     }
   }
 
@@ -213,6 +248,8 @@ resource "kubernetes_ingress" "app_lb_ingress" {
       }
     }
   }
+
+  depends_on = [aws_acm_certificate.app_cert]
 }
 
 # IAM role for pods

@@ -274,13 +274,13 @@ resource "aws_iam_policy" "pods" {
   })
 }
 
-# Attach policy to ExternalDNS role
+# Attach policy to pod role
 resource "aws_iam_role_policy_attachment" "pods" {
   role       = aws_iam_role.pod_role.name
   policy_arn = aws_iam_policy.pods.arn
 }
 
-# ExternalDNS service account
+# Pod service account
 resource "kubernetes_service_account" "pods" {
   metadata {
     name      = "pods"

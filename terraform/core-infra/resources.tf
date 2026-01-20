@@ -253,10 +253,26 @@ resource "aws_route53_record" "cloudfront" {
   }
 }
 
+# Create pod security group for RDS instance
+resource "aws_security_group" "pod_sg" {
+  name        = "pod-sg"
+  vpc_id      = aws_vpc.main.id
+}
+
 # Create RDS security group
 resource "aws_security_group" "db_sg" {
-  name        = "rds-sg"
+  name        = "db-sg"
   vpc_id      = aws_vpc.main.id
+}
+
+# Allow database traffic from pods
+resource "aws_security_group_rule" "allow_pods" {
+  type                     = "ingress"
+  from_port                = 5432
+  to_port                  = 5432
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.pod_sg.id
+  security_group_id        = aws_security_group.db_sg.id
 }
 
 # Create database subnet group to attach to VPC

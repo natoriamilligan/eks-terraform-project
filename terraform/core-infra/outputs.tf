@@ -1,4 +1,4 @@
 output "vpc_id" {
-  default = aws_vpc.main.id
+  value = aws_vpc.main.id
 }
 

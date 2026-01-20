@@ -68,7 +68,7 @@ resource "aws_iam_policy" "external_DNS" {
           "route53:ListHostedZones",
           "route53:ListResourceRecordSets"
         ]
-        Resource = ["*"] 
+        Resource = [data.terraform_remote_state.bootstrap.outputs.hosted_zone] 
       }
     ]
   })
@@ -131,7 +131,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "clusterName"
-    value = data.terraform_remote_state.eks.outputs.cluster_name
+    value = data.terraform_remote_state.core.outputs.cluster_name
   }
 
   set {
@@ -141,7 +141,7 @@ resource "helm_release" "aws_load_balancer_controller" {
 
   set {
     name  = "vpcId"
-    value = data.terraform_remote_state.eks.outputs.vpc_id
+    value = data.terraform_remote_state.core.outputs.vpc_id
   }
 
   set {

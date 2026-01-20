@@ -12,7 +12,6 @@ terraform {
 # Create locals
 locals {
   root_domain = "banksie.app"
-  subdomain   = "www.banksie.app" 
 }
 
 # Create hosted zone

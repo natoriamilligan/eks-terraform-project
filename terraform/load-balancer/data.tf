@@ -1,9 +1,19 @@
-# Reference eks module created in another state
-data "terraform_remote_state" "eks" {
+# Reference core-infra Terraform state
+data "terraform_remote_state" "core" {
   backend = "s3"
   config = {
     bucket = "nmilligan-tf-states"
-    key    = "load-balancer/terraform.tfstate"
+    key    = "core-infra/terraform.tfstate"
+    region = var.region
+  }
+}
+
+# Reference core-infra Terraform state
+data "terraform_remote_state" "bootstrap" {
+  backend = "s3"
+  config = {
+    bucket = "nmilligan-tf-states"
+    key    = "bootstrap/terraform.tfstate"
     region = var.region
   }
 }
@@ -16,12 +26,12 @@ data "aws_iam_policy_document" "lb_controller_trust_policy" {
 
     principals {
       type        = "Federated"
-      identifiers = [data.terraform_remote_state.eks.outputs.oidc_provider_arn]
+      identifiers = [data.terraform_remote_state.core.outputs.oidc_provider_arn]
     }
 
     condition {
       test     = "StringEquals"
-      variable = "${data.terraform_remote_state.eks.outputs.oidc_provider}:sub"
+      variable = "${data.terraform_remote_state.core.outputs.oidc_provider}:sub"
       values   = [
         "system:serviceaccount:kube-system:aws-load-balancer-controller"
       ]
@@ -29,14 +39,14 @@ data "aws_iam_policy_document" "lb_controller_trust_policy" {
 
     condition {
       test     = "StringEquals"
-      variable = "${data.terraform_remote_state.eks.outputs.oidc_provider}:aud"
+      variable = "${data.terraform_remote_state.core.outputs.oidc_provider}:aud"
       values   = ["sts.amazonaws.com"]
     }
   }
 }
 
 data "aws_eks_cluster" "eks" {
-  name = data.terraform_remote_state.eks.outputs.cluster_id
+  name = data.terraform_remote_state.core.outputs.cluster_id
 }
 
 data "aws_eks_cluster_auth" "eks" {

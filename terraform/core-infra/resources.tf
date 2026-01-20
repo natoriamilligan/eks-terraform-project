@@ -283,18 +283,19 @@ resource "aws_db_subnet_group" "db_subnet_group" {
 
 # Create database instance
 resource "aws_db_instance" "app_db" {
-  allocated_storage      = 20
-  db_name                = "mydb"
-  identifier             = "mydb"
-  engine                 = "postgres"
-  instance_class         = "db.t3.micro"
-  username               = "postgres"
-  password               = "password"
+  allocated_storage           = 20
+  db_name                     = "appdb"
+  identifier                  = "appdb"
+  engine                      = "postgres"
+  instance_class              = "db.t3.micro"
+  username                    = "postgres"
+  
+  manage_master_user_password = true
 
-  vpc_security_group_ids = [aws_security_group.db_sg.id]
-  db_subnet_group_name   = aws_db_subnet_group.db_subnet_group.name
+  vpc_security_group_ids      = [aws_security_group.db_sg.id]
+  db_subnet_group_name        = aws_db_subnet_group.db_subnet_group.name
 
-  skip_final_snapshot    = true
+  skip_final_snapshot         = true
 }
 
 # Create private repository in ECR
@@ -306,3 +307,79 @@ resource "aws_ecr_repository" "app_repo" {
     scan_on_push = true
   }
 }
+
+# IAM role for external secrets
+resource "aws_iam_role" "external_secrets_role" {
+  name               = "pod-role"
+  assume_role_policy = data.aws_iam_policy_document.external_secrets_trust_policy.json
+}
+
+# IAM policy for external secrets
+resource "aws_iam_policy" "external_secrets" {
+  name = "ExternalSecretsPolicy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = [aws_db_instance.app_db.master_user_secret[0].secret_arn] 
+      }
+    ]
+  })
+}
+
+# Attach policy to external secrets role
+resource "aws_iam_role_policy_attachment" "pods" {
+  role       = aws_iam_role.external_secrets_role.name
+  policy_arn = aws_iam_policy.external_secrets.arn
+}
+
+# Service account for external secrets
+resource "kubernetes_service_account" "external_secrets" {
+  metadata {
+    name      = "external-secrets"
+    namespace = "kube-system"
+    annotations = {
+      "eks.amazonaws.com/role-arn" = aws_iam_role.external_secrets_role.arn
+    }
+  }
+}
+
+resource "helm_release" "external_secrets" {
+  name       = "external-secrets"
+  namespace  = "kube-system"
+  repository = "https://charts.external-secrets.io"
+  chart      = "external-secrets"
+  version    = "1.2.1"
+
+  set {
+    name  = "serviceAccount.create"
+    value = "false"
+  }
+
+  set {
+    name  = "serviceAccount.name"
+    value = kubernetes_service_account.external_secrets.metadata[0].name
+  }
+
+  depends_on = [
+    kubernetes_service_account.external_secrets
+  ]
+}
+
+# Pod service account
+resource "kubernetes_service_account" "pods" {
+  metadata {
+    name      = "pods"
+    namespace = "default"
+    annotations = {
+      "eks.amazonaws.com/security-groups" = data.terraform_remote_state.core.outputs.pod_sg
+    }
+  }
+}
+

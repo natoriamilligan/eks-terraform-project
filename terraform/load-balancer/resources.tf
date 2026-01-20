@@ -123,6 +123,10 @@ resource "helm_release" "external_DNS" {
     name  = "txtOwnerId"
     value = "external-DNS"
   }
+
+  depends_on = [
+    kubernetes_service_account.external_DNS
+  ]
 }
 
 # Create Load Balancer Controller IAM role
@@ -187,9 +191,13 @@ resource "helm_release" "aws_load_balancer_controller" {
     name  = "serviceAccount.name"
     value = kubernetes_service_account.lb_controller.name
   }
+
+  depends_on = [
+    kubernetes_service_account.lb_controller
+  ]
 }
 
-# Kubernetes service
+# Kubernetes service for load balancer
 resource "kubernetes_service" "app_lb_service" {
   metadata {
     name = "app-lb-service"
@@ -250,44 +258,4 @@ resource "kubernetes_ingress" "app_lb_ingress" {
   }
 
   depends_on = [aws_acm_certificate.app_cert]
-}
-
-# IAM role for pods
-resource "aws_iam_role" "pod_role" {
-  name               = "pod-role"
-  assume_role_policy = data.aws_iam_policy_document.pod_trust_policy.json
-}
-
-# IAM policy for pods
-resource "aws_iam_policy" "pods" {
-  name = "EKSPodPolicy"
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = ["secretsmanager:GetSecretValue"]
-        Resource = [data.terraform_remote_state.core.outputs.db_secret.arn] 
-      }
-    ]
-  })
-}
-
-# Attach policy to pod role
-resource "aws_iam_role_policy_attachment" "pods" {
-  role       = aws_iam_role.pod_role.name
-  policy_arn = aws_iam_policy.pods.arn
-}
-
-# Pod service account
-resource "kubernetes_service_account" "pods" {
-  metadata {
-    name      = "pods"
-    namespace = "default"
-    annotations = {
-      "eks.amazonaws.com/role-arn"        = aws_iam_role.pod_role.arn
-      "eks.amazonaws.com/security-groups" = data.terraform_remote_state.core.outputs.pod_sg
-    }
-  }
 }

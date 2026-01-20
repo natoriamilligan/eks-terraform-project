@@ -79,30 +79,3 @@ data "aws_iam_policy_document" "external_DNS_trust_policy" {
     }
   }
 }
-
-data "aws_iam_policy_document" "pod_trust_policy" {
-  statement {
-    effect = "Allow"
-
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-
-    principals {
-      type        = "Federated"
-      identifiers = [data.terraform_remote_state.core.outputs.oidc_provider_arn]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${data.terraform_remote_state.core.outputs.oidc_provider}:sub"
-      values   = [
-        "system:serviceaccount:default:pods"
-      ]
-    }
-
-    condition {
-      test     = "StringEquals"
-      variable = "${data.terraform_remote_state.core.outputs.oidc_provider}:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-  }
-}

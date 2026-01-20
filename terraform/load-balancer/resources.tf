@@ -214,3 +214,43 @@ resource "kubernetes_ingress" "app_lb_ingress" {
     }
   }
 }
+
+# IAM role for pods
+resource "aws_iam_role" "pod_role" {
+  name               = "pod-role"
+  assume_role_policy = data.aws_iam_policy_document.pod_trust_policy.json
+}
+
+# IAM policy for pods
+resource "aws_iam_policy" "pods" {
+  name = "EKSPodPolicy"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["secretsmanager:GetSecretValue"]
+        Resource = [data.terraform_remote_state.core.outputs.db_secret.arn] 
+      }
+    ]
+  })
+}
+
+# Attach policy to ExternalDNS role
+resource "aws_iam_role_policy_attachment" "pods" {
+  role       = aws_iam_role.pod_role.name
+  policy_arn = aws_iam_policy.pods.arn
+}
+
+# ExternalDNS service account
+resource "kubernetes_service_account" "pods" {
+  metadata {
+    name      = "pods"
+    namespace = "default"
+    annotations = {
+      "eks.amazonaws.com/role-arn"        = aws_iam_role.pod_role.arn
+      "eks.amazonaws.com/security-groups" = data.terraform_remote_state.core.outputs.pod_sg
+    }
+  }
+}

@@ -237,7 +237,7 @@ resource "kubernetes_ingress" "app_lb_ingress" {
 
   spec {
     rule {
-      host = "api.example.com"
+      host = "api.banksie.app"
 
       http {
         path {

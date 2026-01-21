@@ -281,6 +281,27 @@ resource "aws_db_subnet_group" "db_subnet_group" {
   subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
 }
 
+# Generate random password 
+resource "random_password" "db_password" {
+  length  = 16
+  special = true
+}
+
+# Store random password in Secrets Manager 
+resource "aws_secretsmanager_secret" "db_password" {
+  name = "db-password"
+}
+
+resource "aws_secretsmanager_secret_version" "db_password" {
+  secret_id     = aws_secretsmanager_secret.db_password.id
+  secret_string = jsonencode({
+    password = random_password.db_password.result
+  })
+
+  depends_on    = [aws_secretsmanager_secret.db_password, random_password.db_password]
+}
+
+
 # Create database instance
 resource "aws_db_instance" "app_db" {
   allocated_storage           = 20
@@ -289,13 +310,14 @@ resource "aws_db_instance" "app_db" {
   engine                      = "postgres"
   instance_class              = "db.t3.micro"
   username                    = "postgres"
-  
-  manage_master_user_password = true
+  password                    = jsondecode(aws_secretsmanager_secret_version.db_password.secret_string["password"])
 
   vpc_security_group_ids      = [aws_security_group.db_sg.id]
   db_subnet_group_name        = aws_db_subnet_group.db_subnet_group.name
 
   skip_final_snapshot         = true
+
+  depends_on = [aws_secretsmanager_secret_version.db_password]
 }
 
 # Create private repository in ECR
@@ -310,7 +332,7 @@ resource "aws_ecr_repository" "app_repo" {
 
 # IAM role for external secrets
 resource "aws_iam_role" "external_secrets_role" {
-  name               = "pod-role"
+  name               = "external-secrets-role"
   assume_role_policy = data.aws_iam_policy_document.external_secrets_trust_policy.json
 }
 
@@ -371,6 +393,41 @@ resource "helm_release" "external_secrets" {
     kubernetes_service_account.external_secrets
   ]
 }
+
+# Connect Kubernetes to AWS
+resource "kubernetes_manifest" "cluster_secret_store" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ClusterSecretStore"
+
+    metadata = {
+      name = "aws-secrets"
+    }
+
+    spec = {
+      provider = {
+        aws = {
+          service = "SecretsManager"
+          region  = "us-east-1"
+
+          auth = {
+            jwt = {
+              serviceAccountRef = {
+                name      = kubernetes_service_account.external_secrets.metadata[0].name
+                namespace = "kube-system"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  depends_on = [
+    helm_release.external_secrets
+  ]
+}
+
 
 # Pod service account
 resource "kubernetes_service_account" "pods" {

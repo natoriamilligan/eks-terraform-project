@@ -492,7 +492,7 @@ resource "kubernetes_deployment" "app_deployment" {
 
           env {
             name  = "DB_USERNAME"
-            value = "postgres"
+            value = aws_db_instance.app_db.username
           }
 
           env {
@@ -503,6 +503,21 @@ resource "kubernetes_deployment" "app_deployment" {
                 key  = "DB_PASSWORD"
               }
             }
+          }
+
+          env {
+            name  = "DB_HOST"
+            value = aws_db_instance.app_db.address
+          }
+
+          env {
+            name  = "DB_PORT"
+            value = 5432
+          }
+
+          env {
+            name  = "DB_NAME"
+            value = aws_db_instance.app_db.db_name
           }
 
           ports {

@@ -50,3 +50,5 @@ data "aws_iam_policy_document" "external_secrets_trust_policy" {
     }
   }
 }
+
+data "aws_caller_identity" "current" {}

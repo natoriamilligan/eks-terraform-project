@@ -301,7 +301,6 @@ resource "aws_secretsmanager_secret_version" "db_password" {
   depends_on    = [aws_secretsmanager_secret.db_password, random_password.db_password]
 }
 
-
 # Create database instance
 resource "aws_db_instance" "app_db" {
   allocated_storage           = 20
@@ -428,6 +427,92 @@ resource "kubernetes_manifest" "cluster_secret_store" {
   ]
 }
 
+resource "kubernetes_manifest" "db_password_external_secret" {
+  manifest = {
+    apiVersion = "external-secrets.io/v1"
+    kind       = "ExternalSecret"
+
+    metadata = {
+      name      = "db-password"
+      namespace = "default"
+    }
+
+    spec = {
+      refreshInterval = "1h"
+
+      secretStoreRef = {
+        name = "aws-secrets"
+        kind = "ClusterSecretStore"
+      }
+
+      target = {
+        name           = "db-password"
+        creationPolicy = "Owner"
+      }
+
+      data = [
+        {
+          secretKey = "DB_PASSWORD"
+          remoteRef = {
+            key      = aws_secretsmanager_secret.db_password.name
+            property = "password"
+          }
+        }
+      ]
+    }
+  }
+}
+
+resource "kubernetes_deployment" "app_deployment" {
+  metadata {
+    name      = "app-deployment"
+    namespace = "default"
+  }
+
+  spec {
+    replicas = 2
+
+    selector {
+      match_labels = {
+        app = "app-pod"
+      }
+    }
+
+    template {
+      metadata {
+        labels = {
+          app = "app-pod"
+        }
+      }
+
+      spec {
+        container {
+          name  = "app-container"
+          image = "${data.aws_caller_identity.current.account_id}.dkr.ecr.${var.region}.amazonaws.com/${aws_ecr_repository.app_repo.name}:latest"
+
+          env {
+            name  = "DB_USERNAME"
+            value = "postgres"
+          }
+
+          env {
+            name = "DB_PASSWORD"
+            value_from {
+              secret_key_ref {
+                name = "app-db-secret"
+                key  = "DB_PASSWORD"
+              }
+            }
+          }
+
+          ports {
+            container_port = 5000
+          }
+        }
+      }
+    }
+  }
+}
 
 # Pod service account
 resource "kubernetes_service_account" "pods" {

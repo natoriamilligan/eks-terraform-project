@@ -12,6 +12,7 @@ terraform {
 locals {
   root_domain  = "banksie.app"
   subdomain    = "www.banksie.app"
+  api_domain   = api.banksie.app
   s3_origin_id = "s3origin"
 }
 
@@ -360,117 +361,88 @@ resource "aws_iam_role_policy_attachment" "pods" {
   policy_arn = aws_iam_policy.external_secrets.arn
 }
 
-# Service account for external secrets
-resource "kubernetes_service_account" "external_secrets" {
-  metadata {
-    name      = "external-secrets"
-    namespace = "kube-system"
-    annotations = {
-      "eks.amazonaws.com/role-arn" = aws_iam_role.external_secrets_role.arn
-    }
+# Create TLS certificate for api domain
+resource "aws_acm_certificate" "api_cert" {
+  domain_name       = local.api_domain
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
-resource "helm_release" "external_secrets" {
-  name       = "external-secrets"
-  namespace  = "kube-system"
-  repository = "https://charts.external-secrets.io"
-  chart      = "external-secrets"
-  version    = "1.2.1"
-
-  set {
-    name  = "serviceAccount.create"
-    value = "false"
+# Create CNAME records in hosted zone for api
+resource "aws_route53_record" "api_validation_record" {
+  for_each = {
+    for domain in aws_acm_certificate.api_cert.domain_validation_options : domain.domain_name => {
+      name    = domain.resource_record_name
+      record  = domain.resource_record_value
+      type    = domain.resource_record_type
+      zone_id = aws_route53_zone.hosted_zone.zone_id
+    }
   }
 
-  set {
-    name  = "serviceAccount.name"
-    value = kubernetes_service_account.external_secrets.metadata[0].name
-  }
-
-  depends_on = [
-    kubernetes_service_account.external_secrets
-  ]
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 300
+  type            = each.value.type
+  zone_id         = each.value.zone_id
 }
 
-# Connect Kubernetes to AWS
-resource "kubernetes_manifest" "cluster_secret_store" {
-  manifest = {
-    apiVersion = "external-secrets.io/v1"
-    kind       = "ClusterSecretStore"
+# Validate the api certificate using CNAME records
+resource "aws_acm_certificate_validation" "api_cert_validation" {
+  certificate_arn         = aws_acm_certificate.api_cert.arn
+  validation_record_fqdns = [for record in aws_route53_record.api_validation_record : record.fqdn]
+}
 
-    metadata = {
-      name = "aws-secrets"
-    }
+# IAM role for ExternalDNS
+resource "aws_iam_role" "external_DNS_role" {
+  name               = "external-DNS-role"
+  assume_role_policy = data.aws_iam_policy_document.external_DNS_trust_policy.json
+}
 
-    spec = {
-      provider = {
-        aws = {
-          service = "SecretsManager"
-          region  = "us-east-1"
+# IAM policy for ExternalDNS 
+resource "aws_iam_policy" "external_DNS" {
+  name = "ExternalDNSPolicy"
 
-          auth = {
-            jwt = {
-              serviceAccountRef = {
-                name      = kubernetes_service_account.external_secrets.metadata[0].name
-                namespace = "kube-system"
-              }
-            }
-          }
-        }
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "route53:ChangeResourceRecordSets",
+          "route53:ListHostedZones",
+          "route53:ListResourceRecordSets"
+        ]
+        Resource = [data.terraform_remote_state.bootstrap.outputs.hosted_zone] 
       }
-    }
-  }
-
-  depends_on = [
-    helm_release.external_secrets
-  ]
+    ]
+  })
 }
 
-resource "kubernetes_manifest" "db_password_external_secret" {
-  manifest = {
-    apiVersion = "external-secrets.io/v1"
-    kind       = "ExternalSecret"
-
-    metadata = {
-      name      = "db-password"
-      namespace = "default"
-    }
-
-    spec = {
-      refreshInterval = "1h"
-
-      secretStoreRef = {
-        name = "aws-secrets"
-        kind = "ClusterSecretStore"
-      }
-
-      target = {
-        name           = "db-password"
-        creationPolicy = "Owner"
-      }
-
-      data = [
-        {
-          secretKey = "DB_PASSWORD"
-          remoteRef = {
-            key      = aws_secretsmanager_secret.db_password.name
-            property = "password"
-          }
-        }
-      ]
-    }
-  }
+# Attach policy to ExternalDNS role
+resource "aws_iam_role_policy_attachment" "external_DNS" {
+  role       = aws_iam_role.external_DNS_role.name
+  policy_arn = aws_iam_policy.external_DNS.arn
 }
 
-# Pod service account
-resource "kubernetes_service_account" "pods" {
-  metadata {
-    name      = "pods"
-    namespace = "default"
-    annotations = {
-      "eks.amazonaws.com/security-groups" = aws_security_group.pod_sg.id
-    }
-  }
+# Create Load Balancer Controller IAM role
+resource "aws_iam_role" "lb_controller_role" {
+  name               = "lb-controller-role"
+  assume_role_policy = data.aws_iam_policy_document.lb_controller_trust_policy.json
+}
+
+# Create policy for LB Controller
+resource "aws_iam_policy" "lb_controller" {
+  name   = "LBControllerIAMPolicy"
+  policy = file("${path.module}/lb-iam-policy.json")
+}
+
+# Attach LB Controller policy to IAM role
+resource "aws_iam_role_policy_attachment" "test-attach" {
+  role       = aws_iam_role.lb_controller_role.name
+  policy_arn = aws_iam_policy.lb_controller.arn
 }
 

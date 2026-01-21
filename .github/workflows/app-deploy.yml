@@ -1,0 +1,65 @@
+name: Deploy App to AWS EKS
+
+on: 
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: 000363030077.dkr.ecr.us-east-1.amazonaws.com/app-repo
+  EKS_CLUSTER_NAME: eks-cluster
+  NAMESPACE: default
+  DEPLOYMENT_NAME: app-deployment
+  CONTAINER_NAME: app-container
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps: 
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v5
+      with: 
+        role-to-assume: arn:aws:iam::000363030077:role/core-infra-github-role
+        aws-region: us-east-1
+
+    - name: Login to Amazon ECR
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Build and push Docker image to ECR
+      run: |
+        docker build -f backend/Dockerfile -t ${{ env.ECR_REPO }}:latest backend/
+        docker push ${{ env.ECR_REPO }}:latest
+        
+    - name: Update kubeconfig
+      run: |
+        aws eks update-kubeconfig \
+          --region ${{ env.AWS_REGION }} \
+          --name ${{ env.EKS_CLUSTER_NAME }}
+
+    - name: Redeploy app with new image
+      run: |
+        kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} \
+          ${{ env.CONTAINER_NAME }}=${{ env.ECR_REPO }}:latest \
+          -n ${{ env.NAMESPACE }}
+
+    - name: Verify rollout is completed
+      run: |
+        kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} \
+          -n ${{ env.NAMESPACE }}
+
+    - name: Smoke test
+      run: |
+        curl -f https://api.banksie.app/health
+            
+    - name: Notify Slack if pipeline fails
+      if: failure()
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        payload: |
+          {
+            "text": "🚨 *Deployment Pipeline Failed*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nWorkflow: ${{ github.workflow }}\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

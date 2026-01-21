@@ -378,7 +378,7 @@ resource "kubernetes_service_account" "pods" {
     name      = "pods"
     namespace = "default"
     annotations = {
-      "eks.amazonaws.com/security-groups" = data.terraform_remote_state.core.outputs.pod_sg
+      "eks.amazonaws.com/security-groups" = aws_security_group.pod_sg.id
     }
   }
 }

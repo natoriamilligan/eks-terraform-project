@@ -13,7 +13,7 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v5
       with: 
-        role-to-assume: arn:aws:iam::000363030077:role/terraform-github-role
+        role-to-assume: arn:aws:iam::000363030077:role/core-infra-github-role
         aws-region: us-east-1
 
     - name: Setup Terraform
@@ -39,7 +39,7 @@ jobs:
       with:
         payload: |
           {
-            "text": "🚨 *Infrastructure Pipeline Failed*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nWorkflow: ${{ github.workflow }}\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
+            "text": "🚨 *AWS Infrastructure Pipeline Failed*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nWorkflow: ${{ github.workflow }}\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
           }
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

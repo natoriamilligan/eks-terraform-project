@@ -1,0 +1,45 @@
+name: Provision Kubernetes Resources
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    steps: 
+    - name: Checkout repository
+      uses: actions/checkout@v6
+      
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v5
+      with: 
+        role-to-assume: arn:aws:iam::000363030077:role/k8s-github-role
+        aws-region: us-east-1
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: 1.14.3
+
+    - name: Initiate Terraform
+      run: terraform init
+      working-directory: terraform/k8s
+
+    - name: Plan infrastructure
+      run: terraform plan
+      working-directory: terraform/k8s
+
+    - name: Apply infrastructure 
+      run: terraform apply -auto-approve
+      working-directory: terraform/k8s
+        
+    - name: Notify Slack if pipeline fails
+      if: failure()
+      uses: slackapi/slack-github-action@v2.1.1
+      with:
+        payload: |
+          {
+            "text": "🚨 *Kubernetes Infrastructure Pipeline Failed*\nRepo: ${{ github.repository }}\nBranch: ${{ github.ref_name }}\nWorkflow: ${{ github.workflow }}\n<https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|View logs>"
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

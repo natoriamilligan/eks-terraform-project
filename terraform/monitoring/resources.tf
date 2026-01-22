@@ -4,7 +4,7 @@ terraform {
     bucket         = "nmilligan-tf-states"
     key            = "monitoring/terraform.tfstate"
     region         = var.region
-    dynamodb_table = "terraform-lock-bootstrap"
+    dynamodb_table = "terraform-lock"
     encrypt        = true
   }
 }

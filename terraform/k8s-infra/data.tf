@@ -8,5 +8,9 @@ data "terraform_remote_state" "core" {
   }
 }
 
+data "aws_eks_cluster_auth" "eks" {
+  name = data.terraform_remote_state.core.outputs.cluster_name
+}
+
 data "aws_caller_identity" "current" {}
 

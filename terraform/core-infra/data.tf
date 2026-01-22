@@ -88,14 +88,6 @@ data "aws_iam_policy_document" "lb_controller_trust_policy" {
   }
 }
 
-data "aws_eks_cluster" "eks" {
-  name = module.eks.cluster_id
-}
-
-data "aws_eks_cluster_auth" "eks" {
-  name = data.aws_eks_cluster.eks.name
-}
-
 data "aws_iam_policy_document" "external_DNS_trust_policy" {
   statement {
     effect = "Allow"

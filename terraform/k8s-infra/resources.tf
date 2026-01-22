@@ -282,6 +282,9 @@ resource "kubernetes_service" "app_lb_service" {
   metadata {
     name = "app-lb-service"
     namespace = "default"
+    labels = {
+      app = "app-lb-service" 
+    }
   }
 
   spec {

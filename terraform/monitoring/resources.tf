@@ -52,12 +52,12 @@ resource "kubernetes_manifest" "service_monitor" {
     spec = {
       selector = {
         matchLabels = {
-          app = "app-pod"
+          app = "app-lb-service"
         }
       }
 
       namespaceSelector = {
-        matchNames = ["app"]
+        matchNames = ["default"]
       }
 
       endpoints = [

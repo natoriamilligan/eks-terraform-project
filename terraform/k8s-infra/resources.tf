@@ -82,7 +82,7 @@ resource "kubernetes_manifest" "db_password_external_secret" {
     kind       = "ExternalSecret"
 
     metadata = {
-      name      = "db-password"
+      name      = "db-credentials"
       namespace = "default"
     }
 
@@ -95,7 +95,7 @@ resource "kubernetes_manifest" "db_password_external_secret" {
       }
 
       target = {
-        name           = "db-password"
+        name           = "db-credentials"
         creationPolicy = "Owner"
       }
 
@@ -105,6 +105,27 @@ resource "kubernetes_manifest" "db_password_external_secret" {
           remoteRef = {
             key      = data.terraform_remote_state.core.outputs.secret_name
             property = "password"
+          }
+        },
+        {
+          secretKey = "DB_USERNAME"
+          remoteRef = {
+            key      = data.terraform_remote_state.core.outputs.secret_name
+            property = "username"
+          }
+        },
+        {
+          secretKey = "DB_HOST"
+          remoteRef = {
+            key      = data.terraform_remote_state.core.outputs.secret_name
+            property = "host"
+          }
+        },
+        {
+          secretKey = "DB_NAME"
+          remoteRef = {
+            key      = data.terraform_remote_state.core.outputs.secret_name
+            property = "db_name"
           }
         }
       ]
@@ -141,14 +162,19 @@ resource "kubernetes_deployment" "app_deployment" {
 
           env {
             name  = "DB_USERNAME"
-            value = data.terraform_remote_state.core.outputs.db_username
+            value_from {
+              secret_key_ref {
+                name = "db-credentials"
+                key  = "DB_USERNAME"
+              }
+            }
           }
 
           env {
             name = "DB_PASSWORD"
             value_from {
               secret_key_ref {
-                name = "app-db-secret"
+                name = "db-credentials"
                 key  = "DB_PASSWORD"
               }
             }
@@ -156,7 +182,12 @@ resource "kubernetes_deployment" "app_deployment" {
 
           env {
             name  = "DB_HOST"
-            value = data.terraform_remote_state.core.outputs.db_host
+            value_from {
+              secret_key_ref {
+                name = "db-credentials"
+                key  = "DB_HOST"
+              }
+            }
           }
 
           env {
@@ -166,7 +197,12 @@ resource "kubernetes_deployment" "app_deployment" {
 
           env {
             name  = "DB_NAME"
-            value = data.terraform_remote_state.core.outputs.db_name
+            value_from {
+              secret_key_ref {
+                name = "db-credentials"
+                key  = "DB_NAME"
+              }
+            }
           }
 
           ports {

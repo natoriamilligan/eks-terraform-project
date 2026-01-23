@@ -290,7 +290,7 @@ resource "random_password" "db_password" {
 
 # Store random password in Secrets Manager 
 resource "aws_secretsmanager_secret" "db_password" {
-  name = "db-password"
+  name = "db-credentials"
 }
 
 resource "aws_secretsmanager_secret_version" "db_password" {

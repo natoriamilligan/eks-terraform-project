@@ -297,9 +297,12 @@ resource "aws_secretsmanager_secret_version" "db_password" {
   secret_id     = aws_secretsmanager_secret.db_password.id
   secret_string = jsonencode({
     password = random_password.db_password.result
+    username = "postgres"
+    db_name  = "appdb
+    host     = aws_db_instance.app_db.endpoint
   })
 
-  depends_on    = [aws_secretsmanager_secret.db_password, random_password.db_password]
+  depends_on    = [aws_db_instance.app_dbrandom_password.db_password]
 }
 
 # Create database instance
@@ -310,14 +313,14 @@ resource "aws_db_instance" "app_db" {
   engine                      = "postgres"
   instance_class              = "db.t3.micro"
   username                    = "postgres"
-  password                    = jsondecode(aws_secretsmanager_secret_version.db_password.secret_string["password"])
+  password                    = random_password.db_password.result
 
   vpc_security_group_ids      = [aws_security_group.db_sg.id]
   db_subnet_group_name        = aws_db_subnet_group.db_subnet_group.name
 
   skip_final_snapshot         = true
 
-  depends_on = [aws_secretsmanager_secret_version.db_password]
+  depends_on = [random_password.db_password]
 }
 
 # Create private repository in ECR

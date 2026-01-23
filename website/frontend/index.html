@@ -64,7 +64,14 @@
                     }
 
                     const data = await response.json();
+                    const list = document.getElementById('message').innerHTML;
 
+                    for (i = 0; i < data.length; i++) {
+                        let stringNum = data[i]["id"];
+                        let task = data[i]["task"]
+
+                        list = list + `${stringNum}: ${task}`                  
+                    }
                     document.getElementById('message').innerHTML = `Message from the backend: ${data.message}`;
                 } catch (error) {
                     document.getElementById('error-message').innerHTML = "Error fetching tasks from the backend.";

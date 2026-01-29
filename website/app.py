@@ -3,6 +3,8 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -15,7 +17,7 @@ def get_connection():
         password=os.environ["DB_PASSWORD"],
         cursor_factory=RealDictCursor
     )
-
+print("")
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
@@ -44,7 +46,7 @@ def create_task():
 
     cur.execute(
         "INSERT INTO tasks (task) VALUES (%s);",
-        (task)
+        (task,)
     )
 
     conn.commit()

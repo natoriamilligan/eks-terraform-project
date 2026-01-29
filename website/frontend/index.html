@@ -72,7 +72,6 @@
 
                         list = list + `${stringNum}: ${task}`                  
                     }
-                    document.getElementById('message').innerHTML = `Message from the backend: ${data.message}`;
                 } catch (error) {
                     document.getElementById('error-message').innerHTML = "Error fetching tasks from the backend.";
                     console.error("Error:", error);

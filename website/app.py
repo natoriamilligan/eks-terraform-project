@@ -5,7 +5,7 @@ from db import db
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from models import Task
+from models import TaskModel
 
 
 app = Flask(__name__)
@@ -25,7 +25,7 @@ migrate = Migrate(app, db)
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
-    tasks = Task.query.order_by(Task.id).all()
+    tasks = TaskModel.query.order_by(TaskModel.id).all()
     task_list = [{"id": t.id, "task": t.task} for t in tasks]
 
     return jsonify(task_list), 200
@@ -38,7 +38,7 @@ def create_task():
     if not task_text:
         return jsonify({"error": "Task is required"}), 400
 
-    new_task = Task(task=task_text)
+    new_task = TaskModel(task=task_text)
     db.session.add(new_task)
     db.session.commit()
 

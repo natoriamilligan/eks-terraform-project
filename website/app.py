@@ -1,64 +1,49 @@
 import os
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from db import db
 from dotenv import load_dotenv
-load_dotenv()
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
+from models import Task
+
 
 app = Flask(__name__)
 CORS(app)
+load_dotenv()
 
-def get_connection():
-    return psycopg2.connect(
-        host=os.environ["DB_HOST"],
-        database=os.environ["DB_NAME"],
-        user=os.environ["DB_USERNAME"],
-        password=os.environ["DB_PASSWORD"],
-        cursor_factory=RealDictCursor
-    )
-print("")
+DB_HOST = os.environ["DB_HOST"]
+DB_NAME = os.environ["DB_NAME"]
+DB_USERNAME = os.environ["DB_USERNAME"]
+DB_PASSWORD = os.environ["DB_PASSWORD"]
+
+app.config["SQLALCHEMY_DATABASE_URI"] = f"postgresql://{DB_USERNAME}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+db.init_app(app)
+migrate = Migrate(app, db)
 
 @app.route("/tasks", methods=["GET"])
 def get_tasks():
-    conn = get_connection()
-    cur = conn.cursor()
+    tasks = Task.query.order_by(Task.id).all()
+    task_list = [{"id": t.id, "task": t.task} for t in tasks]
 
-    cur.execute("SELECT id, task FROM tasks ORDER BY id;")
-    tasks = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return jsonify(tasks), 200
+    return jsonify(task_list), 200
 
 @app.route("/tasks", methods=["POST"])
 def create_task():
     data = request.get_json()
+    task_text = data.get("task")
 
-    task = data.get("task")
-
-    if not task:
+    if not task_text:
         return jsonify({"error": "Task is required"}), 400
 
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        "INSERT INTO tasks (task) VALUES (%s);",
-        (task,)
-    )
-
-    conn.commit()
-
-    cur.close()
-    conn.close()
+    new_task = Task(task=task_text)
+    db.session.add(new_task)
+    db.session.commit()
 
     return jsonify({"message": "Your task has been added!"}), 201
 
 @app.route("/health", methods=["GET"])
 def get_health():
     return {"status": "ok"}, 200
-
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)

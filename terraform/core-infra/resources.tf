@@ -166,10 +166,16 @@ resource "aws_cloudfront_origin_access_control" "s3" {
 resource "aws_cloudfront_origin_request_policy" "ORP_policy" {
   name    = "ORP-policy"
   cookies_config {
-    cookie_behavior = "none"
+    cookie_behavior = "whitelist"
+    cookies {
+      items = ["access_token_cookie", "refresh_token_cookie"]
+    }
   }
   headers_config {
-    header_behavior = "none"
+    header_behavior = "whitelist"
+    headers {
+      items = ["Content-Type"]
+    }
   }
   query_strings_config {
     query_string_behavior = "none"
@@ -179,8 +185,8 @@ resource "aws_cloudfront_origin_request_policy" "ORP_policy" {
 # Create policy to limit caching to S3
 resource "aws_cloudfront_cache_policy" "s3_cache_policy" {
   name        = "s3-cache-policy"
-  default_ttl = 3600
-  max_ttl     = 86400
+  default_ttl = 0
+  max_ttl     = 0
   min_ttl     = 0
   parameters_in_cache_key_and_forwarded_to_origin {
     cookies_config {

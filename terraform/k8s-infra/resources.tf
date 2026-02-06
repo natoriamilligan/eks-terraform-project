@@ -76,13 +76,13 @@ resource "kubernetes_manifest" "cluster_secret_store" {
   ]
 }
 
-resource "kubernetes_manifest" "db_password_external_secret" {
+resource "kubernetes_manifest" "db_external_secrets" {
   manifest = {
     apiVersion = "external-secrets.io/v1"
     kind       = "ExternalSecret"
 
     metadata = {
-      name      = "db-credentials"
+      name      = "app-secrets"
       namespace = "default"
     }
 
@@ -95,7 +95,7 @@ resource "kubernetes_manifest" "db_password_external_secret" {
       }
 
       target = {
-        name           = "db-credentials"
+        name           = "app-secrets"
         creationPolicy = "Owner"
       }
 
@@ -103,29 +103,36 @@ resource "kubernetes_manifest" "db_password_external_secret" {
         {
           secretKey = "DB_PASSWORD"
           remoteRef = {
-            key      = data.terraform_remote_state.core.outputs.secret_name
+            key      = data.terraform_remote_state.core.outputs.db_secret_name
             property = "password"
           }
         },
         {
           secretKey = "DB_USERNAME"
           remoteRef = {
-            key      = data.terraform_remote_state.core.outputs.secret_name
+            key      = data.terraform_remote_state.core.outputs.db_secret_name
             property = "username"
           }
         },
         {
           secretKey = "DB_HOST"
           remoteRef = {
-            key      = data.terraform_remote_state.core.outputs.secret_name
+            key      = data.terraform_remote_state.core.outputs.db_secret_name
             property = "host"
           }
         },
         {
           secretKey = "DB_NAME"
           remoteRef = {
-            key      = data.terraform_remote_state.core.outputs.secret_name
+            key      = data.terraform_remote_state.core.outputs.db_secret_name
             property = "db_name"
+          }
+        },
+        {
+          secretKey = "JWT_SECRET_KEY"
+          remoteRef = {
+            key      = data.terraform_remote_state.core.outputs.jwt_secret_name
+            property = "jwt_secret_key"
           }
         }
       ]
@@ -164,7 +171,7 @@ resource "kubernetes_deployment" "app_deployment" {
             name  = "DB_USERNAME"
             value_from {
               secret_key_ref {
-                name = "db-credentials"
+                name = "app-secrets"
                 key  = "DB_USERNAME"
               }
             }

@@ -295,21 +295,21 @@ resource "random_password" "db_password" {
 }
 
 # Create secret in Secrets Manager 
-resource "aws_secretsmanager_secret" "db_password" {
+resource "aws_secretsmanager_secret" "db_credentials" {
   name = "db-credentials"
 }
 
 # Create db credentials secret version
-resource "aws_secretsmanager_secret_version" "db_password" {
-  secret_id     = aws_secretsmanager_secret.db_password.id
+resource "aws_secretsmanager_secret_version" "db_credentials" {
+  secret_id     = aws_secretsmanager_secret.db_credentials.id
   secret_string = jsonencode({
-    password = random_password.db_password.result
+    password = random_password.db_credentials.result
     username = "postgres"
     db_name  = "appdb
     host     = aws_db_instance.app_db.endpoint
   })
 
-  depends_on    = [aws_db_instance.app_db, random_password.db_password]
+  depends_on    = [aws_db_instance.app_db, random_password.db_credentials]
 }
 
 # Create database instance

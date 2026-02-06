@@ -6,8 +6,12 @@ output "external_secrets_role" {
   value = aws_iam_role.external_secrets_role.arn
 }
 
-output "secret_name" {
-  value = aws_secretsmanager_secret.db_password.name
+output "db_secret_name" {
+  value = aws_secretsmanager_secret.db_credentials.name
+}
+
+output "jwt_secret_name" {
+  value = aws_secretsmanager_secret.jwt.name
 }
 
 output "repo_name" {
@@ -19,7 +23,8 @@ output "db_username" {
 }
 
 output "db_host" {
-  value = aws_db_instance.app_db.address
+  value     = aws_db_instance.app_db.address
+  sensitive = true
 }
 
 output "db_name" {

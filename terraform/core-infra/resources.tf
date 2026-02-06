@@ -294,11 +294,12 @@ resource "random_password" "db_password" {
   special = true
 }
 
-# Store random password in Secrets Manager 
+# Create secret in Secrets Manager 
 resource "aws_secretsmanager_secret" "db_password" {
   name = "db-credentials"
 }
 
+# Create db credentials secret version
 resource "aws_secretsmanager_secret_version" "db_password" {
   secret_id     = aws_secretsmanager_secret.db_password.id
   secret_string = jsonencode({
@@ -308,7 +309,7 @@ resource "aws_secretsmanager_secret_version" "db_password" {
     host     = aws_db_instance.app_db.endpoint
   })
 
-  depends_on    = [aws_db_instance.app_dbrandom_password.db_password]
+  depends_on    = [aws_db_instance.app_db, random_password.db_password]
 }
 
 # Create database instance
@@ -455,3 +456,23 @@ resource "aws_iam_role_policy_attachment" "test-attach" {
   policy_arn = aws_iam_policy.lb_controller.arn
 }
 
+# Generate random password for JWT
+resource "random_password" "jwt" {
+  length  = 32
+  special = true
+}
+
+# Create jwt secret in Secrets Manager 
+resource "aws_secretsmanager_secret" "jwt" {
+  name = "jwt-secret-key"
+}
+
+# Create jwt secret version
+resource "aws_secretsmanager_secret_version" "jwt" {
+  secret_id     = aws_secretsmanager_secret.jwt.id
+  secret_string = jsonencode({
+    jwt_secret_key = random_password.jwt.result
+  })
+
+  depends_on    = [random_password.jwt]
+}
